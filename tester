@@ -393,7 +393,7 @@ local function AutoSummitHandler()
                 getgenv().CurrentCheckpoint += 1
             end
 
-            task.wait(1) -- loop ultra cepat
+            task.wait(0.1) -- loop ultra cepat
         end
 
         setBlackScreen(false) -- selesai → layar normal
