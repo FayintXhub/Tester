@@ -101,23 +101,40 @@ local function createBlackScreenGui()
     InfoLabel.Position = UDim2.new(0,20,0.55,0)
     InfoLabel.BackgroundTransparency = 1
     InfoLabel.Text = "BlackScreen: ON"
-    InfoLabel.TextColor3 = Color3.fromRGB(255,255,255)
-    InfoLabel.Font = Enum.Font.SourceSansBold
-    InfoLabel.TextScaled = true
-    InfoLabel.TextStrokeTransparency = 0.5
-    InfoLabel.Parent = BlackScreenGui
-end
+    InfoLabel.TextColor3 = Color3.fro-- ================== BlackScreen Manual ==================
+local BlackScreenGui
 
 local function setBlackScreen(state)
-    ManualBlackScreenToggle = state
+    -- Hapus overlay lama jika ada
+    if BlackScreenGui then
+        pcall(function() BlackScreenGui:Destroy() end)
+        BlackScreenGui = nil
+    end
+
     if state then
-        createBlackScreenGui()
-        if InfoLabel then InfoLabel.Text = "BlackScreen: ON" end
-    else
-        if BlackScreenGui then
-            pcall(function() BlackScreenGui:Destroy() end)
-            BlackScreenGui, TitleLabel1, TitleLabel2, InfoLabel = nil, nil, nil, nil
-        end
+        BlackScreenGui = Instance.new("ScreenGui")
+        BlackScreenGui.Name = "ManualBlackScreen"
+        BlackScreenGui.ResetOnSpawn = false
+        BlackScreenGui.IgnoreGuiInset = true
+        BlackScreenGui.Parent = game.CoreGui
+
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.new(1,0,1,0)
+        frame.Position = UDim2.new(0,0,0,0)
+        frame.BackgroundColor3 = Color3.new(0,0,0)
+        frame.BorderSizePixel = 0
+        frame.Parent = BlackScreenGui
+
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1,0,0,50)
+        label.Position = UDim2.new(0,0,0.45,0)
+        label.BackgroundTransparency = 1
+        label.Text = "BlackScreen Manual"
+        label.TextColor3 = Color3.fromRGB(255,255,255)
+        label.Font = Enum.Font.SourceSansBold
+        label.TextScaled = true
+        label.TextStrokeTransparency = 0.5
+        label.Parent = BlackScreenGui
     end
 end
 
