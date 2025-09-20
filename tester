@@ -116,15 +116,6 @@ local function setBlackScreen(state)
         end
     end
 end
-
-function updateBlackScreenInfo()
-    if InfoLabel then
-        getgenv().SummitCount = getgenv().SummitCount or 0
-        getgenv().CurrentCheckpoint = getgenv().CurrentCheckpoint or 1
-        InfoLabel.Text = "Summit: "..tostring(getgenv().SummitCount).." | Checkpoint: "..tostring(getgenv().CurrentCheckpoint)
-    end
-end
-
 -- ================== Helper Notify ==================
 local function SafeNotify(data)
     local now = tick()
