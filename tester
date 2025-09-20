@@ -10,7 +10,7 @@ local RunService = game:GetService("RunService")
 
 -- ================== Window ==================
 local Window = Rayfield:CreateWindow({
-    Name = "[VIP] ⛰️Mount HTS - FayintXHub",
+    Name = "[VIP] ⛰️Mount Gamon - FayintXHub",
     Icon = 0,
     LoadingTitle = "Loading script...🚀",
     LoadingSubtitle = "Powered by FayintXHub",
@@ -33,7 +33,7 @@ getgenv().CurrentCheckpoint = 1
 getgenv().AutoSummitLoop = false
 getgenv().AutoSummitOnce = false
 getgenv().AutoSummitRunning = false
-getgenv().AutoSummitDelay = 0.00
+getgenv().AutoSummitDelay = 0.01
 getgenv().WalkSpeedValue = 16
 getgenv().InfiniteJump = false
 getgenv().GodMode = true
@@ -49,6 +49,90 @@ local ESPEnabled = false
 local ESPBoxes, ESPConnections, lastNotify = {}, {}, {}
 local AntiFlingEnabled = false
 local AntiFlingConnection
+
+-- ================== Black Screen Overlay (Fixed) ==================
+local BlackScreenGui, TitleLabel1, TitleLabel2, InfoLabel = nil, nil, nil, nil
+
+local function setBlackScreen(state)
+    if state then
+        if not BlackScreenGui then
+            BlackScreenGui = Instance.new("ScreenGui")
+            BlackScreenGui.Name = "AutoSummitBlackScreen"
+            BlackScreenGui.ResetOnSpawn = false
+            BlackScreenGui.IgnoreGuiInset = true
+            BlackScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+            BlackScreenGui.Parent = game.CoreGui
+
+            local frame = Instance.new("Frame")
+            frame.Size = UDim2.new(1,0,1,0)
+            frame.Position = UDim2.new(0,0,0,0)
+            frame.BackgroundColor3 = Color3.new(0,0,0)
+            frame.BorderSizePixel = 0
+            frame.Parent = BlackScreenGui
+            
+            -- Judul Utama
+            TitleLabel1 = Instance.new("TextLabel")
+            TitleLabel1.Size = UDim2.new(1, -40, 0, 50)
+            TitleLabel1.Position = UDim2.new(0,20,0.32,0)
+            TitleLabel1.BackgroundTransparency = 1
+            TitleLabel1.Text = "Mountain Gamon"
+            TitleLabel1.TextColor3 = Color3.fromRGB(255,255,255)
+            TitleLabel1.Font = Enum.Font.SourceSansBold
+            TitleLabel1.TextScaled = true
+            TitleLabel1.TextStrokeTransparency = 0.5
+            TitleLabel1.Parent = BlackScreenGui       
+
+            -- Subjudul
+            TitleLabel2 = Instance.new("TextLabel")
+            TitleLabel2.Size = UDim2.new(1, -40, 0, 60)
+            TitleLabel2.Position = UDim2.new(0,20,0.42,0)
+            TitleLabel2.BackgroundTransparency = 1
+            TitleLabel2.Text = "Auto Summit by FayintXHub"
+            TitleLabel2.TextColor3 = Color3.fromRGB(255,255,255)
+            TitleLabel2.Font = Enum.Font.SourceSansBold
+            TitleLabel2.TextScaled = true
+            TitleLabel2.TextStrokeTransparency = 0.5
+            TitleLabel2.Parent = BlackScreenGui
+
+            -- Info Jumlah Summit & Checkpoint
+            InfoLabel = Instance.new("TextLabel")
+            InfoLabel.Size = UDim2.new(1, -40, 0, 45)
+            InfoLabel.Position = UDim2.new(0,20,0.55,0)
+            InfoLabel.BackgroundTransparency = 1
+            InfoLabel.Text = "Jumlah Summit: 0 | Checkpoint: 0"
+            InfoLabel.TextColor3 = Color3.fromRGB(255,255,255)
+            InfoLabel.Font = Enum.Font.SourceSansBold
+            InfoLabel.TextScaled = true
+            InfoLabel.TextStrokeTransparency = 0.5
+            InfoLabel.Parent = BlackScreenGui
+        end
+    else
+        if BlackScreenGui then
+            pcall(function() BlackScreenGui:Destroy() end)
+            BlackScreenGui, TitleLabel1, TitleLabel2, InfoLabel = nil, nil, nil, nil
+        end
+    end
+end
+
+local function updateBlackScreenInfo()
+    if InfoLabel then
+        -- Pastikan SummitCount sudah terdefinisi
+        if getgenv().SummitCount == nil then getgenv().SummitCount = 0 end
+        if getgenv().CurrentCheckpoint == nil then getgenv().CurrentCheckpoint = 1 end
+        InfoLabel.Text = "Summit: "..tostring(getgenv().SummitCount).." | Checkpoint: "..tostring(getgenv().CurrentCheckpoint)
+    end
+end
+
+-- ================== Auto Summit Safety Wrapper ==================
+local function safeAutoSummitWrapper(func)
+    -- Pastikan black screen selalu hilang jika terjadi error
+    local success, err = pcall(func)
+    setBlackScreen(false)
+    getgenv().AutoSummitRunning = false
+    if not success then
+        SafeNotify({Title="⚠️ Auto Summit Error", Content=tostring(err), Duration=3})
+    end
+end
 
 -- ================== Helper Notify ==================
 local function SafeNotify(data)
@@ -233,10 +317,11 @@ end
 game.Players.PlayerAdded:Connect(function(p) if ESPEnabled and p~=plr then createESP(p) end end)
 game.Players.PlayerRemoving:Connect(removeESP)
 
--- ================== Auto Summit Handler ==================
+-- ================== Auto Summit Handler with Black Screen (No Error Notify) ==================
 local function AutoSummitHandler()
     if getgenv().AutoSummitRunning then return end
     getgenv().AutoSummitRunning = true
+    setBlackScreen(true) -- overlay muncul saat mulai
 
     local mode = getgenv().AutoSummitLoop and "Loop" or "Sekali"
     SafeNotify({Title="🚀 Auto Summit "..mode, Content="Dimulai!", Duration=2})
@@ -257,50 +342,46 @@ local function AutoSummitHandler()
                     ))
                 end)
                 getgenv().CurrentCheckpoint = i
-                SafeNotify({Title="📍 Checkpoint", Content="Pindah ke "..cp.Name, Duration=0.8})
+                updateBlackScreenInfo() -- update info di overlay
                 task.wait(getgenv().AutoSummitDelay + math.random()*0.2)
             end
         end
 
-        -- ================== Once Mode ==================
-        if getgenv().AutoSummitOnce then
-            getgenv().CurrentCheckpoint = 1
-            for i = getgenv().CurrentCheckpoint, #getgenv().Checkpoints do
-                gotoCheckpoint(i)
-            end
-            SafeNotify({Title="🏔️ Summit", Content="Sudah sampai Summit!", Duration=2})
-            getgenv().AutoSummitOnce = false
-            getgenv().AutoSummitRunning = false
-            return
-        end
-
-        -- ================== Loop Mode ==================
-        if getgenv().AutoSummitLoop then
-            getgenv().CurrentCheckpoint = 1
-        end
-
-        while getgenv().AutoSummitLoop do
-            gotoCheckpoint(getgenv().CurrentCheckpoint)
-
-            if getgenv().CurrentCheckpoint >= #getgenv().Checkpoints then
-                SafeNotify({Title="🏔️ Summit", Content="Sudah sampai Summit!", Duration=2})
-
-                if getgenv().AutoSummitRespawn then
-                    pcall(function() plr.Character:BreakJoints() end)
-                    local newChar = plr.CharacterAdded:Wait()
-                    newChar:WaitForChild("HumanoidRootPart",10)
-                    task.wait(0.5)
-                end
-
+        pcall(function()
+            -- ================== Once Mode ==================
+            if getgenv().AutoSummitOnce then
                 getgenv().CurrentCheckpoint = 1
-            else
-                getgenv().CurrentCheckpoint += 1
+                for i = getgenv().CurrentCheckpoint, #getgenv().Checkpoints do
+                    gotoCheckpoint(i)
+                end
+                getgenv().AutoSummitOnce = false
             end
 
-            task.wait(0.1)
-        end
+            -- ================== Loop Mode ==================
+            if getgenv().AutoSummitLoop then
+                getgenv().CurrentCheckpoint = 1
+            end
+
+            while getgenv().AutoSummitLoop do
+                gotoCheckpoint(getgenv().CurrentCheckpoint)
+
+                if getgenv().CurrentCheckpoint >= #getgenv().Checkpoints then
+                    if getgenv().AutoSummitRespawn then
+                        pcall(function() plr.Character:BreakJoints() end)
+                        local newChar = plr.CharacterAdded:Wait()
+                        newChar:WaitForChild("HumanoidRootPart",10)
+                        task.wait(0.5)
+                    end
+
+                    getgenv().CurrentCheckpoint = 1
+                else
+                    getgenv().CurrentCheckpoint += 1
+                end
+            end
+        end)
 
         getgenv().AutoSummitRunning = false
+        setBlackScreen(false) -- overlay hilang saat selesai
         SafeNotify({Title="🚀 Auto Summit "..mode, Content="Selesai!", Duration=2})
     end)
 end
@@ -383,19 +464,17 @@ local PlayerTab = Window:CreateTab("👥 Player")
 local AboutTab = Window:CreateTab("📝 About")
 
 -- ================== Main Tab ==================
-MainTab:CreateParagraph({Title = "Note :", Content = "Disetiap checkpoint mohon lompat atau keliling biar ke cp!!\nJika terjadi bug mohon segera hubungi Fayint"})
-MainTab:CreateToggle({
-    Name="🚀 Auto Summit Loop (BEST)", 
-    CurrentValue=false, 
-    Callback=function(v)
-        getgenv().AutoSummitLoop = v
-        if v then
-            getgenv().AutoSummitOnce = false
-            getgenv().CurrentCheckpoint = 1
-            AutoSummitHandler()
-        end
+MainTab:CreateParagraph({Title = "Note :", Content = "Jika kurang puas sama delay\nSilahkan atur delay dibawah\nJika terjadi bug mohon segera hubungi Fayint"})
+MainTab:CreateToggle({Name="🚀 Auto Summit Loop (BEST)", CurrentValue=false, Callback=function(v)
+    getgenv().AutoSummitLoop=v
+    if v then
+        getgenv().AutoSummitOnce=false
+        AutoSummitHandler()
+    else
+        -- safety: jika dimatikan manual, pastikan overlay hilang
+        setBlackScreen(false)
     end
-})
+end})
 MainTab:CreateButton({
     Name="🎯 Auto Summit Sekali", 
     Callback=function()
