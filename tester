@@ -43,7 +43,7 @@ getgenv().GotoPlayer = false
 getgenv().BringPlayer = false
 getgenv().NonstopServerHop = false
 getgenv().VisitedServers = {}
-getgenv().AutoSummitRespawn = true
+getgenv().AutoSummitRespawn = false
 
 local ESPEnabled = false
 local ESPBoxes, ESPConnections, lastNotify = {}, {}, {}
