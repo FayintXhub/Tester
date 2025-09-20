@@ -1,3 +1,6 @@
+-- FayintXHub Mount Gamon - Auto Summit v5.0.2
+-- Perbaikan: BlackScreen stable, SummitCount terupdate, overlay bertahan saat respawn
+
 -- ================== Load Rayfield ==================
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
@@ -10,7 +13,7 @@ local RunService = game:GetService("RunService")
 
 -- ================== Window ==================
 local Window = Rayfield:CreateWindow({
-    Name = "[VIP] ⛰️Mount Gamon - FayintXHub",
+    Name = "[VIP] ⛰️Mount HTS - FayintXHub",
     Icon = 0,
     LoadingTitle = "Loading script...🚀",
     LoadingSubtitle = "Powered by FayintXHub",
@@ -44,6 +47,7 @@ getgenv().BringPlayer = false
 getgenv().NonstopServerHop = false
 getgenv().VisitedServers = {}
 getgenv().AutoSummitRespawn = false
+getgenv().SummitCount = getgenv().SummitCount or 0 -- pastikan terdefinisi
 
 local ESPEnabled = false
 local ESPBoxes, ESPConnections, lastNotify = {}, {}, {}
@@ -69,13 +73,13 @@ local function setBlackScreen(state)
             frame.BackgroundColor3 = Color3.new(0,0,0)
             frame.BorderSizePixel = 0
             frame.Parent = BlackScreenGui
-            
+
             -- Judul Utama
             TitleLabel1 = Instance.new("TextLabel")
             TitleLabel1.Size = UDim2.new(1, -40, 0, 50)
             TitleLabel1.Position = UDim2.new(0,20,0.32,0)
             TitleLabel1.BackgroundTransparency = 1
-            TitleLabel1.Text = "Mountain Gamon"
+            TitleLabel1.Text = "Mountain HTS"
             TitleLabel1.TextColor3 = Color3.fromRGB(255,255,255)
             TitleLabel1.Font = Enum.Font.SourceSansBold
             TitleLabel1.TextScaled = true
@@ -106,6 +110,8 @@ local function setBlackScreen(state)
             InfoLabel.TextStrokeTransparency = 0.5
             InfoLabel.Parent = BlackScreenGui
         end
+        -- pastikan info terupdate saat dipanggil
+        updateBlackScreenInfo()
     else
         if BlackScreenGui then
             pcall(function() BlackScreenGui:Destroy() end)
@@ -114,23 +120,24 @@ local function setBlackScreen(state)
     end
 end
 
-local function updateBlackScreenInfo()
+function updateBlackScreenInfo()
     if InfoLabel then
-        -- Pastikan SummitCount sudah terdefinisi
-        if getgenv().SummitCount == nil then getgenv().SummitCount = 0 end
-        if getgenv().CurrentCheckpoint == nil then getgenv().CurrentCheckpoint = 1 end
+        getgenv().SummitCount = getgenv().SummitCount or 0
+        getgenv().CurrentCheckpoint = getgenv().CurrentCheckpoint or 1
         InfoLabel.Text = "Summit: "..tostring(getgenv().SummitCount).." | Checkpoint: "..tostring(getgenv().CurrentCheckpoint)
     end
 end
 
 -- ================== Auto Summit Safety Wrapper ==================
 local function safeAutoSummitWrapper(func)
-    -- Pastikan black screen selalu hilang jika terjadi error
+    -- wrapper menjaga agar overlay tidak tertinggal dan AutoSummitRunning ter-reset
     local success, err = pcall(func)
-    setBlackScreen(false)
+    -- selalu pastikan overlay hilang dan state false
+    pcall(function() setBlackScreen(false) end)
     getgenv().AutoSummitRunning = false
     if not success then
-        SafeNotify({Title="⚠️ Auto Summit Error", Content=tostring(err), Duration=3})
+        -- jika ingin menonaktifkan error notify, jangan panggil SafeNotify di sini
+        -- SafeNotify({Title="⚠️ Auto Summit Error", Content=tostring(err), Duration=3})
     end
 end
 
@@ -262,6 +269,12 @@ plr.CharacterAdded:Connect(function(char)
         if getgenv().AntiFling then
             setAntiFling(true)
         end
+
+        -- Jika AutoSummit sedang berjalan, pastikan overlay tetap muncul dan info terupdate
+        if getgenv().AutoSummitRunning then
+            setBlackScreen(true)
+            updateBlackScreenInfo()
+        end
     end)
 end)
 
@@ -317,11 +330,14 @@ end
 game.Players.PlayerAdded:Connect(function(p) if ESPEnabled and p~=plr then createESP(p) end end)
 game.Players.PlayerRemoving:Connect(removeESP)
 
--- ================== Auto Summit Handler with Black Screen (No Error Notify) ==================
+-- ================== Auto Summit Handler with Black Screen (Fixed & Info Update) ==================
 local function AutoSummitHandler()
     if getgenv().AutoSummitRunning then return end
     getgenv().AutoSummitRunning = true
-    setBlackScreen(true) -- overlay muncul saat mulai
+
+    -- tampilkan overlay & update info awal
+    setBlackScreen(true)
+    updateBlackScreenInfo()
 
     local mode = getgenv().AutoSummitLoop and "Loop" or "Sekali"
     SafeNotify({Title="🚀 Auto Summit "..mode, Content="Dimulai!", Duration=2})
@@ -341,8 +357,15 @@ local function AutoSummitHandler()
                         math.random(-0.3,0.3)
                     ))
                 end)
+
+                -- update checkpoint & info
                 getgenv().CurrentCheckpoint = i
-                updateBlackScreenInfo() -- update info di overlay
+                if i == #getgenv().Checkpoints then
+                    -- sampai summit => naikkan count
+                    getgenv().SummitCount = (getgenv().SummitCount or 0) + 1
+                end
+                updateBlackScreenInfo()
+
                 task.wait(getgenv().AutoSummitDelay + math.random()*0.2)
             end
         end
@@ -368,6 +391,7 @@ local function AutoSummitHandler()
                 if getgenv().CurrentCheckpoint >= #getgenv().Checkpoints then
                     if getgenv().AutoSummitRespawn then
                         pcall(function() plr.Character:BreakJoints() end)
+                        -- tunggu respawn & pastikan hrp ada
                         local newChar = plr.CharacterAdded:Wait()
                         newChar:WaitForChild("HumanoidRootPart",10)
                         task.wait(0.5)
@@ -377,11 +401,21 @@ local function AutoSummitHandler()
                 else
                     getgenv().CurrentCheckpoint += 1
                 end
+
+                -- update overlay setiap iterasi jika masih berjalan
+                if getgenv().AutoSummitRunning then
+                    setBlackScreen(true) -- memastikan overlay ada
+                    updateBlackScreenInfo()
+                end
+
+                -- jika user mematikan loop dari UI, keluar
+                if not getgenv().AutoSummitLoop then break end
             end
         end)
 
+        -- selesai auto summit (baik once maupun loop berhenti)
         getgenv().AutoSummitRunning = false
-        setBlackScreen(false) -- overlay hilang saat selesai
+        setBlackScreen(false)
         SafeNotify({Title="🚀 Auto Summit "..mode, Content="Selesai!", Duration=2})
     end)
 end
@@ -574,7 +608,7 @@ end
 
 -- ================== About Tab ==================
 AboutTab:CreateParagraph({Title = "👋 Hallo Everyone", Content = "Selamat datang di FayintXHub!\nTerimakasih telah menggunakan script ini\nSelalu support Fayint kedepannya yaa..."})
-AboutTab:CreateParagraph({Title = "🧑‍💻 Creator Script", Content = "by FayintXHub\nSince: 12 September 2025\nVersion: 5.0.1"})
+AboutTab:CreateParagraph({Title = "🧑‍💻 Creator Script", Content = "by FayintXHub\nSince: 12 September 2025\nVersion: 5.0.2"})
 AboutTab:CreateButton({
     Name = "📞 Contact Fayint || Next Mount?",
     Callback = function()
@@ -599,4 +633,3 @@ AboutTab:CreateButton({
 
 -- ================== Finish ==================
 SafeNotify({Title="✅ FayintXHub Loaded", Content="Script telah siap, Enjoy the script!!🔥", Duration=5})
- 
