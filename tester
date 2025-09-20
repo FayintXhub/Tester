@@ -48,6 +48,7 @@ getgenv().NonstopServerHop = false
 getgenv().VisitedServers = {}
 getgenv().AutoSummitRespawn = false
 getgenv().SummitCount = getgenv().SummitCount or 0 -- pastikan terdefinisi
+getgenv().ManualBlackScreen = false -- toggle manual BlackScreen
 
 local ESPEnabled = false
 local ESPBoxes, ESPConnections, lastNotify = {}, {}, {}
@@ -330,13 +331,15 @@ end
 game.Players.PlayerAdded:Connect(function(p) if ESPEnabled and p~=plr then createESP(p) end end)
 game.Players.PlayerRemoving:Connect(removeESP)
 
--- ================== Auto Summit Handler with Black Screen (Fixed & Info Update) ==================
+-- ================== Auto Summit Handler (mengikuti toggle manual) ==================
 local function AutoSummitHandler()
     if getgenv().AutoSummitRunning then return end
     getgenv().AutoSummitRunning = true
 
-    -- tampilkan overlay & update info awal
-    setBlackScreen(true)
+    -- tampilkan overlay hanya jika toggle manual nyala
+    if getgenv().ManualBlackScreen then
+        setBlackScreen(true)
+    end
     updateBlackScreenInfo()
 
     local mode = getgenv().AutoSummitLoop and "Loop" or "Sekali"
@@ -358,20 +361,22 @@ local function AutoSummitHandler()
                     ))
                 end)
 
-                -- update checkpoint & info
                 getgenv().CurrentCheckpoint = i
                 if i == #getgenv().Checkpoints then
-                    -- sampai summit => naikkan count
                     getgenv().SummitCount = (getgenv().SummitCount or 0) + 1
                 end
-                updateBlackScreenInfo()
 
+                if getgenv().ManualBlackScreen then
+                    setBlackScreen(true)
+                else
+                    setBlackScreen(false)
+                end
+                updateBlackScreenInfo()
                 task.wait(getgenv().AutoSummitDelay + math.random()*0.2)
             end
         end
 
         pcall(function()
-            -- ================== Once Mode ==================
             if getgenv().AutoSummitOnce then
                 getgenv().CurrentCheckpoint = 1
                 for i = getgenv().CurrentCheckpoint, #getgenv().Checkpoints do
@@ -380,7 +385,6 @@ local function AutoSummitHandler()
                 getgenv().AutoSummitOnce = false
             end
 
-            -- ================== Loop Mode ==================
             if getgenv().AutoSummitLoop then
                 getgenv().CurrentCheckpoint = 1
             end
@@ -391,29 +395,28 @@ local function AutoSummitHandler()
                 if getgenv().CurrentCheckpoint >= #getgenv().Checkpoints then
                     if getgenv().AutoSummitRespawn then
                         pcall(function() plr.Character:BreakJoints() end)
-                        -- tunggu respawn & pastikan hrp ada
                         local newChar = plr.CharacterAdded:Wait()
                         newChar:WaitForChild("HumanoidRootPart",10)
                         task.wait(0.5)
                     end
-
                     getgenv().CurrentCheckpoint = 1
                 else
                     getgenv().CurrentCheckpoint += 1
                 end
 
-                -- update overlay setiap iterasi jika masih berjalan
                 if getgenv().AutoSummitRunning then
-                    setBlackScreen(true) -- memastikan overlay ada
+                    if getgenv().ManualBlackScreen then
+                        setBlackScreen(true)
+                    else
+                        setBlackScreen(false)
+                    end
                     updateBlackScreenInfo()
                 end
 
-                -- jika user mematikan loop dari UI, keluar
                 if not getgenv().AutoSummitLoop then break end
             end
         end)
 
-        -- selesai auto summit (baik once maupun loop berhenti)
         getgenv().AutoSummitRunning = false
         setBlackScreen(false)
         SafeNotify({Title="🚀 Auto Summit "..mode, Content="Selesai!", Duration=2})
@@ -517,13 +520,14 @@ MainTab:CreateButton({
         AutoSummitHandler()
     end
 })
--- Toggle Manual BlackScreen
+-- Manual BlackScreen Toggle
 MainTab:CreateToggle({
-    Name = "⚫ BlackScreen",
-    CurrentValue = false,
+    Name = "🖤 BlackScreen Manual",
+    CurrentValue = getgenv().ManualBlackScreen,
     Callback = function(v)
+        getgenv().ManualBlackScreen = v
         setBlackScreen(v)
-        SafeNotify({Title="⚫ BlackScreen", Content=v and "Nyala" or "Mati", Duration=2})
+        SafeNotify({Title="🖤 BlackScreen", Content=v and "Nyala" or "Mati", Duration=2})
     end
 })
 MainTab:CreateSlider({Name="⏳ Summit Delay", Range={0.5,20}, Increment=0.5, Suffix="Detik", CurrentValue=getgenv().AutoSummitDelay, Callback=function(v) getgenv().AutoSummitDelay=v end})
