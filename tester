@@ -48,7 +48,7 @@ getgenv().NonstopServerHop = false
 getgenv().VisitedServers = {}
 getgenv().AutoSummitRespawn = false
 getgenv().SummitCount = getgenv().SummitCount or 0
-getgenv().ManualBlackScreen = false -- toggle manual BlackScreen
+getgenv().BlackScreenEnabled = true -- toggle manual default ON
 
 local ESPEnabled = false
 local ESPBoxes, ESPConnections, lastNotify = {}, {}, {}
@@ -309,15 +309,13 @@ end
 game.Players.PlayerAdded:Connect(function(p) if ESPEnabled and p~=plr then createESP(p) end end)
 game.Players.PlayerRemoving:Connect(removeESP)
 
--- ================== Auto Summit Handler (mengikuti toggle manual) ==================
+-- ================== Auto Summit Handler ==================
 local function AutoSummitHandler()
     if getgenv().AutoSummitRunning then return end
     getgenv().AutoSummitRunning = true
 
-    -- tampilkan overlay hanya jika toggle manual nyala
-    if getgenv().ManualBlackScreen then
-        setBlackScreen(true)
-    end
+    -- tampilkan overlay sesuai toggle manual
+    setBlackScreen(getgenv().ManualBlackScreen)
     updateBlackScreenInfo()
 
     local mode = getgenv().AutoSummitLoop and "Loop" or "Sekali"
@@ -344,11 +342,7 @@ local function AutoSummitHandler()
                     getgenv().SummitCount = (getgenv().SummitCount or 0) + 1
                 end
 
-                if getgenv().ManualBlackScreen then
-                    setBlackScreen(true)
-                else
-                    setBlackScreen(false)
-                end
+                setBlackScreen(getgenv().ManualBlackScreen)
                 updateBlackScreenInfo()
                 task.wait(getgenv().AutoSummitDelay + math.random()*0.2)
             end
@@ -382,21 +376,15 @@ local function AutoSummitHandler()
                     getgenv().CurrentCheckpoint += 1
                 end
 
-                if getgenv().AutoSummitRunning then
-                    if getgenv().ManualBlackScreen then
-                        setBlackScreen(true)
-                    else
-                        setBlackScreen(false)
-                    end
-                    updateBlackScreenInfo()
-                end
+                setBlackScreen(getgenv().ManualBlackScreen)
+                updateBlackScreenInfo()
 
                 if not getgenv().AutoSummitLoop then break end
             end
         end)
 
         getgenv().AutoSummitRunning = false
-        setBlackScreen(false)
+        setBlackScreen(getgenv().ManualBlackScreen)
         SafeNotify({Title="🚀 Auto Summit "..mode, Content="Selesai!", Duration=2})
     end)
 end
@@ -509,7 +497,6 @@ MainTab:CreateToggle({Name="🛌 Respawn setelah Summit", CurrentValue=getgenv()
     SafeNotify({Title="🛌 Respawn", Content=getgenv().AutoSummitRespawn and "Aktif" or "Nonaktif", Duration=2})
 end})
 
--- Manual BlackScreen Toggle
 MainTab:CreateToggle({
     Name = "🖤 BlackScreen Manual",
     CurrentValue = getgenv().ManualBlackScreen,
