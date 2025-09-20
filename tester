@@ -75,7 +75,6 @@ local function setBlackScreen(state)
             frame.BorderSizePixel = 0
             frame.Parent = BlackScreenGui
 
-            -- Judul Utama
             TitleLabel1 = Instance.new("TextLabel")
             TitleLabel1.Size = UDim2.new(1, -40, 0, 50)
             TitleLabel1.Position = UDim2.new(0,20,0.32,0)
@@ -87,7 +86,6 @@ local function setBlackScreen(state)
             TitleLabel1.TextStrokeTransparency = 0.5
             TitleLabel1.Parent = BlackScreenGui       
 
-            -- Subjudul
             TitleLabel2 = Instance.new("TextLabel")
             TitleLabel2.Size = UDim2.new(1, -40, 0, 60)
             TitleLabel2.Position = UDim2.new(0,20,0.42,0)
@@ -99,7 +97,6 @@ local function setBlackScreen(state)
             TitleLabel2.TextStrokeTransparency = 0.5
             TitleLabel2.Parent = BlackScreenGui
 
-            -- Info Jumlah Summit & Checkpoint
             InfoLabel = Instance.new("TextLabel")
             InfoLabel.Size = UDim2.new(1, -40, 0, 45)
             InfoLabel.Position = UDim2.new(0,20,0.55,0)
@@ -111,7 +108,6 @@ local function setBlackScreen(state)
             InfoLabel.TextStrokeTransparency = 0.5
             InfoLabel.Parent = BlackScreenGui
         end
-        -- pastikan info terupdate saat dipanggil
         updateBlackScreenInfo()
     else
         if BlackScreenGui then
@@ -520,7 +516,6 @@ MainTab:CreateButton({
         AutoSummitHandler()
     end
 })
--- Manual BlackScreen Toggle
 MainTab:CreateToggle({
     Name = "🖤 BlackScreen Manual",
     CurrentValue = getgenv().ManualBlackScreen,
