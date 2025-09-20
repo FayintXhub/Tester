@@ -54,72 +54,71 @@ local ESPBoxes, ESPConnections, lastNotify = {}, {}, {}
 local AntiFlingEnabled = false
 local AntiFlingConnection
 
--- ================== Black Screen Overlay (Fixed Toggle) ==================
+-- ================== Black Screen Overlay Manual ==================
 local BlackScreenGui, TitleLabel1, TitleLabel2, InfoLabel = nil, nil, nil, nil
-local ManualBlackScreenToggle = false  -- FLAG untuk toggle manual
+local ManualBlackScreenToggle = false  -- FLAG toggle manual
 
-local function setBlackScreen(state, manual)
-    manual = manual or false
-    if manual then
-        ManualBlackScreenToggle = state
-    end
+local function createBlackScreenGui()
+    if BlackScreenGui then return end
+    BlackScreenGui = Instance.new("ScreenGui")
+    BlackScreenGui.Name = "ManualBlackScreen"
+    BlackScreenGui.ResetOnSpawn = false
+    BlackScreenGui.IgnoreGuiInset = true
+    BlackScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    BlackScreenGui.Parent = game.CoreGui
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1,0,1,0)
+    frame.Position = UDim2.new(0,0,0,0)
+    frame.BackgroundColor3 = Color3.new(0,0,0)
+    frame.BorderSizePixel = 0
+    frame.Parent = BlackScreenGui
+
+    -- Judul Utama
+    TitleLabel1 = Instance.new("TextLabel")
+    TitleLabel1.Size = UDim2.new(1, -40, 0, 50)
+    TitleLabel1.Position = UDim2.new(0,20,0.32,0)
+    TitleLabel1.BackgroundTransparency = 1
+    TitleLabel1.Text = "Mountain HTS"
+    TitleLabel1.TextColor3 = Color3.fromRGB(255,255,255)
+    TitleLabel1.Font = Enum.Font.SourceSansBold
+    TitleLabel1.TextScaled = true
+    TitleLabel1.TextStrokeTransparency = 0.5
+    TitleLabel1.Parent = BlackScreenGui       
+
+    -- Subjudul
+    TitleLabel2 = Instance.new("TextLabel")
+    TitleLabel2.Size = UDim2.new(1, -40, 0, 60)
+    TitleLabel2.Position = UDim2.new(0,20,0.42,0)
+    TitleLabel2.BackgroundTransparency = 1
+    TitleLabel2.Text = "Manual BlackScreen"
+    TitleLabel2.TextColor3 = Color3.fromRGB(255,255,255)
+    TitleLabel2.Font = Enum.Font.SourceSansBold
+    TitleLabel2.TextScaled = true
+    TitleLabel2.TextStrokeTransparency = 0.5
+    TitleLabel2.Parent = BlackScreenGui
+
+    -- Info Label
+    InfoLabel = Instance.new("TextLabel")
+    InfoLabel.Size = UDim2.new(1, -40, 0, 45)
+    InfoLabel.Position = UDim2.new(0,20,0.55,0)
+    InfoLabel.BackgroundTransparency = 1
+    InfoLabel.Text = "BlackScreen: ON"
+    InfoLabel.TextColor3 = Color3.fromRGB(255,255,255)
+    InfoLabel.Font = Enum.Font.SourceSansBold
+    InfoLabel.TextScaled = true
+    InfoLabel.TextStrokeTransparency = 0.5
+    InfoLabel.Parent = BlackScreenGui
+end
+
+local function setBlackScreen(state)
+    ManualBlackScreenToggle = state
 
     if state then
-        if not BlackScreenGui then
-            BlackScreenGui = Instance.new("ScreenGui")
-            BlackScreenGui.Name = "AutoSummitBlackScreen"
-            BlackScreenGui.ResetOnSpawn = false
-            BlackScreenGui.IgnoreGuiInset = true
-            BlackScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-            BlackScreenGui.Parent = game.CoreGui
-
-            local frame = Instance.new("Frame")
-            frame.Size = UDim2.new(1,0,1,0)
-            frame.Position = UDim2.new(0,0,0,0)
-            frame.BackgroundColor3 = Color3.new(0,0,0)
-            frame.BorderSizePixel = 0
-            frame.Parent = BlackScreenGui
-
-            -- Judul Utama
-            TitleLabel1 = Instance.new("TextLabel")
-            TitleLabel1.Size = UDim2.new(1, -40, 0, 50)
-            TitleLabel1.Position = UDim2.new(0,20,0.32,0)
-            TitleLabel1.BackgroundTransparency = 1
-            TitleLabel1.Text = "Mountain HTS"
-            TitleLabel1.TextColor3 = Color3.fromRGB(255,255,255)
-            TitleLabel1.Font = Enum.Font.SourceSansBold
-            TitleLabel1.TextScaled = true
-            TitleLabel1.TextStrokeTransparency = 0.5
-            TitleLabel1.Parent = BlackScreenGui       
-
-            -- Subjudul
-            TitleLabel2 = Instance.new("TextLabel")
-            TitleLabel2.Size = UDim2.new(1, -40, 0, 60)
-            TitleLabel2.Position = UDim2.new(0,20,0.42,0)
-            TitleLabel2.BackgroundTransparency = 1
-            TitleLabel2.Text = "Auto Summit by FayintXHub"
-            TitleLabel2.TextColor3 = Color3.fromRGB(255,255,255)
-            TitleLabel2.Font = Enum.Font.SourceSansBold
-            TitleLabel2.TextScaled = true
-            TitleLabel2.TextStrokeTransparency = 0.5
-            TitleLabel2.Parent = BlackScreenGui
-
-            -- Info Jumlah Summit & Checkpoint
-            InfoLabel = Instance.new("TextLabel")
-            InfoLabel.Size = UDim2.new(1, -40, 0, 45)
-            InfoLabel.Position = UDim2.new(0,20,0.55,0)
-            InfoLabel.BackgroundTransparency = 1
-            InfoLabel.Text = "Jumlah Summit: 0 | Checkpoint: 0"
-            InfoLabel.TextColor3 = Color3.fromRGB(255,255,255)
-            InfoLabel.Font = Enum.Font.SourceSansBold
-            InfoLabel.TextScaled = true
-            InfoLabel.TextStrokeTransparency = 0.5
-            InfoLabel.Parent = BlackScreenGui
-        end
-        updateBlackScreenInfo()
+        createBlackScreenGui()
+        if InfoLabel then InfoLabel.Text = "BlackScreen: ON" end
     else
-        -- hanya hapus overlay jika bukan overlay AutoSummit yang sedang berjalan
-        if BlackScreenGui and (not getgenv().AutoSummitRunning or manual) then
+        if BlackScreenGui then
             pcall(function() BlackScreenGui:Destroy() end)
             BlackScreenGui, TitleLabel1, TitleLabel2, InfoLabel = nil, nil, nil, nil
         end
@@ -528,7 +527,7 @@ MainTab:CreateToggle({
     Name = "⚫ BlackScreen",
     CurrentValue = false,
     Callback = function(v)
-        setBlackScreen(v, true) -- tambahkan true agar dianggap toggle manual
+        setBlackScreen(v)
         SafeNotify({Title="⚫ BlackScreen", Content=v and "Nyala" or "Mati", Duration=2})
     end
 })
