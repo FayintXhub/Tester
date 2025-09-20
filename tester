@@ -1,5 +1,5 @@
--- FayintXHub Mount Gamon - Auto Summit v5.0.2
--- Perbaikan: BlackScreen stable, SummitCount terupdate, overlay bertahan saat respawn
+-- FayintXHub Mount Gamon - Auto Summit v5.0.3
+-- Perbaikan: BlackScreen sekarang tergantung toggle manual, overlay bertahan saat respawn
 
 -- ================== Load Rayfield ==================
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -36,7 +36,7 @@ getgenv().CurrentCheckpoint = 1
 getgenv().AutoSummitLoop = false
 getgenv().AutoSummitOnce = false
 getgenv().AutoSummitRunning = false
-getgenv().AutoSummitDelay = 0.01
+getgenv().AutoSummitDelay = 0.00
 getgenv().WalkSpeedValue = 16
 getgenv().InfiniteJump = false
 getgenv().GodMode = true
@@ -47,7 +47,7 @@ getgenv().BringPlayer = false
 getgenv().NonstopServerHop = false
 getgenv().VisitedServers = {}
 getgenv().AutoSummitRespawn = false
-getgenv().SummitCount = getgenv().SummitCount or 0 -- pastikan terdefinisi
+getgenv().SummitCount = getgenv().SummitCount or 0
 getgenv().ManualBlackScreen = false -- toggle manual BlackScreen
 
 local ESPEnabled = false
@@ -55,7 +55,7 @@ local ESPBoxes, ESPConnections, lastNotify = {}, {}, {}
 local AntiFlingEnabled = false
 local AntiFlingConnection
 
--- ================== Black Screen Overlay (Fixed) ==================
+-- ================== Black Screen Overlay ==================
 local BlackScreenGui, TitleLabel1, TitleLabel2, InfoLabel = nil, nil, nil, nil
 
 local function setBlackScreen(state)
@@ -122,19 +122,6 @@ function updateBlackScreenInfo()
         getgenv().SummitCount = getgenv().SummitCount or 0
         getgenv().CurrentCheckpoint = getgenv().CurrentCheckpoint or 1
         InfoLabel.Text = "Summit: "..tostring(getgenv().SummitCount).." | Checkpoint: "..tostring(getgenv().CurrentCheckpoint)
-    end
-end
-
--- ================== Auto Summit Safety Wrapper ==================
-local function safeAutoSummitWrapper(func)
-    -- wrapper menjaga agar overlay tidak tertinggal dan AutoSummitRunning ter-reset
-    local success, err = pcall(func)
-    -- selalu pastikan overlay hilang dan state false
-    pcall(function() setBlackScreen(false) end)
-    getgenv().AutoSummitRunning = false
-    if not success then
-        -- jika ingin menonaktifkan error notify, jangan panggil SafeNotify di sini
-        -- SafeNotify({Title="⚠️ Auto Summit Error", Content=tostring(err), Duration=3})
     end
 end
 
@@ -267,9 +254,13 @@ plr.CharacterAdded:Connect(function(char)
             setAntiFling(true)
         end
 
-        -- Jika AutoSummit sedang berjalan, pastikan overlay tetap muncul dan info terupdate
+        -- Jika AutoSummit sedang berjalan, pastikan overlay tetap muncul sesuai toggle
         if getgenv().AutoSummitRunning then
-            setBlackScreen(true)
+            if getgenv().ManualBlackScreen then
+                setBlackScreen(true)
+            else
+                setBlackScreen(false)
+            end
             updateBlackScreenInfo()
         end
     end)
@@ -498,24 +489,36 @@ local AboutTab = Window:CreateTab("📝 About")
 
 -- ================== Main Tab ==================
 MainTab:CreateParagraph({Title = "Note :", Content = "Jika kurang puas sama delay\nSilahkan atur delay dibawah\nJika terjadi bug mohon segera hubungi Fayint"})
+
 MainTab:CreateToggle({Name="🚀 Auto Summit Loop (BEST)", CurrentValue=false, Callback=function(v)
     getgenv().AutoSummitLoop=v
     if v then
         getgenv().AutoSummitOnce=false
         AutoSummitHandler()
     else
-        -- safety: jika dimatikan manual, pastikan overlay hilang
-        setBlackScreen(false)
+        setBlackScreen(getgenv().ManualBlackScreen)
     end
 end})
+
 MainTab:CreateButton({
-    Name="🎯 Auto Summit Sekali", 
+    Name="🎯 Auto Summit Sekali",
     Callback=function()
         getgenv().AutoSummitOnce = true
         getgenv().CurrentCheckpoint = 1
         AutoSummitHandler()
     end
 })
+
+MainTab:CreateSlider({Name="⏳ Summit Delay", Range={0.5,20}, Increment=0.5, Suffix="Detik", CurrentValue=getgenv().AutoSummitDelay, Callback=function(v) getgenv().AutoSummitDelay=v end})
+
+MainTab:CreateParagraph({Title = "Note :", Content = "Off in respawn jika ingin Summit sekali/Otomatis Loop\nJika diaktifkan akan membuat setiap summit Respawn"})
+
+MainTab:CreateToggle({Name="🛌 Respawn setelah Summit", CurrentValue=getgenv().AutoSummitRespawn, Callback=function(v)
+    getgenv().AutoSummitRespawn = v and true or false
+    SafeNotify({Title="🛌 Respawn", Content=getgenv().AutoSummitRespawn and "Aktif" or "Nonaktif", Duration=2})
+end})
+
+-- Manual BlackScreen Toggle
 MainTab:CreateToggle({
     Name = "🖤 BlackScreen Manual",
     CurrentValue = getgenv().ManualBlackScreen,
@@ -525,12 +528,6 @@ MainTab:CreateToggle({
         SafeNotify({Title="🖤 BlackScreen", Content=v and "Nyala" or "Mati", Duration=2})
     end
 })
-MainTab:CreateSlider({Name="⏳ Summit Delay", Range={0.5,20}, Increment=0.5, Suffix="Detik", CurrentValue=getgenv().AutoSummitDelay, Callback=function(v) getgenv().AutoSummitDelay=v end})
-MainTab:CreateParagraph({Title = "Note :", Content = "Off in respawn jika ingin Summit sekali/Otomatis Loop\nJika diaktifkan akan membuat setiap summit Respawn"})
-MainTab:CreateToggle({Name="🛌 Respawn setelah Summit", CurrentValue=getgenv().AutoSummitRespawn, Callback=function(v)
-    getgenv().AutoSummitRespawn = v and true or false
-    SafeNotify({Title="🛌 Respawn", Content=getgenv().AutoSummitRespawn and "Aktif" or "Nonaktif", Duration=2})
-end})
 
 -- ================== Cheat Tab ==================
 CheatTab:CreateSlider({Name="🏃 WalkSpeed", Range={16,200}, Increment=1, CurrentValue=getgenv().WalkSpeedValue, Callback=applyWalkSpeed})
@@ -588,14 +585,17 @@ PlayerTab:CreateInput({Name="🎯 Username Player", PlaceholderText="Nama player
     local t=game.Players:FindFirstChild(name)
     if t then getgenv().GotoTarget=t SafeNotify({Title="🎯 Target", Content="Target: "..name, Duration=2}) else SafeNotify({Title="⚠️ Error", Content="Player tidak ditemukan!", Duration=2}) end
 end})
+
 PlayerTab:CreateToggle({Name="🚀 Ikutin Player", CurrentValue=false, Callback=function(v)
     getgenv().GotoPlayer=v
     if v then SmoothFollowPlayer() end
 end})
+
 PlayerTab:CreateToggle({Name="🧲 Tarik Player", CurrentValue=false, Callback=function(v)
     getgenv().BringPlayer=v
     if v then SmoothBringPlayer() end
 end})
+
 PlayerTab:CreateButton({Name="🔄 Reset Character", Callback=function() local c = plr.Character if c then c:BreakJoints() SafeNotify({Title="🔄 Reset", Content="Karakter reset", Duration=2}) end end})
 PlayerTab:CreateButton({Name="🔄 Rejoin Server", Callback=RejoinServer})
 PlayerTab:CreateToggle({Name="🌍 Server Hop Nonstop", CurrentValue=false, Callback=function(v) getgenv().NonstopServerHop=v if v then ServerHopLoop() end end})
@@ -616,7 +616,7 @@ end
 
 -- ================== About Tab ==================
 AboutTab:CreateParagraph({Title = "👋 Hallo Everyone", Content = "Selamat datang di FayintXHub!\nTerimakasih telah menggunakan script ini\nSelalu support Fayint kedepannya yaa..."})
-AboutTab:CreateParagraph({Title = "🧑‍💻 Creator Script", Content = "by FayintXHub\nSince: 12 September 2025\nVersion: 5.0.2"})
+AboutTab:CreateParagraph({Title = "🧑‍💻 Creator Script", Content = "by FayintXHub\nSince: 12 September 2025\nVersion: 5.0.3"})
 AboutTab:CreateButton({
     Name = "📞 Contact Fayint || Next Mount?",
     Callback = function()
