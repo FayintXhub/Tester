@@ -36,7 +36,7 @@ getgenv().CurrentCheckpoint = 1
 getgenv().AutoSummitLoop = false
 getgenv().AutoSummitOnce = false
 getgenv().AutoSummitRunning = false
-getgenv().AutoSummitDelay = 0.00
+getgenv().AutoSummitDelay = 0.01
 getgenv().WalkSpeedValue = 16
 getgenv().InfiniteJump = false
 getgenv().GodMode = true
@@ -404,7 +404,7 @@ local function AutoSummitHandler()
 
                 -- update overlay setiap iterasi jika masih berjalan
                 if getgenv().AutoSummitRunning then
-                    setBlackScreen(false) -- memastikan overlay ada
+                    setBlackScreen(true) -- memastikan overlay ada
                     updateBlackScreenInfo()
                 end
 
@@ -515,6 +515,15 @@ MainTab:CreateButton({
         getgenv().AutoSummitOnce = true
         getgenv().CurrentCheckpoint = 1
         AutoSummitHandler()
+    end
+})
+-- Toggle Manual BlackScreen
+MainTab:CreateToggle({
+    Name = "⚫ BlackScreen",
+    CurrentValue = false,
+    Callback = function(v)
+        setBlackScreen(v)
+        SafeNotify({Title="⚫ BlackScreen", Content=v and "Nyala" or "Mati", Duration=2})
     end
 })
 MainTab:CreateSlider({Name="⏳ Summit Delay", Range={0.5,20}, Increment=0.5, Suffix="Detik", CurrentValue=getgenv().AutoSummitDelay, Callback=function(v) getgenv().AutoSummitDelay=v end})
