@@ -524,12 +524,11 @@ MainTab:CreateButton({
         AutoSummitHandler()
     end
 })
--- Toggle Manual BlackScreen
 MainTab:CreateToggle({
     Name = "⚫ BlackScreen",
     CurrentValue = false,
     Callback = function(v)
-        setBlackScreen(v)
+        setBlackScreen(v, true) -- tambahkan true agar dianggap toggle manual
         SafeNotify({Title="⚫ BlackScreen", Content=v and "Nyala" or "Mati", Duration=2})
     end
 })
