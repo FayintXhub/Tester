@@ -336,7 +336,7 @@ local function AutoSummitHandler()
     getgenv().AutoSummitRunning = true
 
     -- tampilkan overlay & update info awal
-    setBlackScreen(true)
+    setBlackScreen(false)
     updateBlackScreenInfo()
 
     local mode = getgenv().AutoSummitLoop and "Loop" or "Sekali"
