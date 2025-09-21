@@ -22,8 +22,8 @@ local Window = Rayfield:CreateWindow({
 -- ================== License / Key System ==================
 -- NOTE: Ganti KeyServerURL ke endpoint valid jika punya server verifikasi.
 getgenv().KeyServerURL = "https://example.com/validate?key=" -- <-- ganti ke server valid
-getgenv().Key = nil
-getgenv().KeyVerified = false
+getgenv().Key = Yintz12
+getgenv().KeyVerified = true
 
 local function RequireKeyNotify()
     SafeNotify({Title = "🔒 Locked", Content = "Fitur terkunci. Verifikasi Key di tab 🔑", Duration = 2.5})
