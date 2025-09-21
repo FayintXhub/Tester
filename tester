@@ -10,7 +10,7 @@ local RunService = game:GetService("RunService")
 
 -- ================== Window ==================
 local Window = Rayfield:CreateWindow({
-    Name = "[VIP] ⛰️Gunung HTS - FayintXHub",
+    Name = "[VIP] ⛰️Mount Yahayuk - FayintXHub",
     Icon = 0,
     LoadingTitle = "Loading script...🚀",
     LoadingSubtitle = "Powered by FayintXHub",
@@ -21,19 +21,18 @@ local Window = Rayfield:CreateWindow({
 
 -- ================== Global Variables ==================
 getgenv().Checkpoints = {
-    {Name="Checkpoint 1", Pos=Vector3.new(159.55, 325.86, 375.67)},
-    {Name="Checkpoint 2", Pos=Vector3.new(402.85, 393.86, 281.44)},
-    {Name="Checkpoint 3", Pos=Vector3.new(662.77, 517.55, 86.91)},
-    {Name="Checkpoint 4", Pos=Vector3.new(455.54, 733.86, -139.27)},
-    {Name="Checkpoint 5", Pos=Vector3.new(51.21, 857.86, -331.68)},
-    {Name="Checkpoint 6", Pos=Vector3.new(-262.79, 857.86, -145.87)},
-    {Name="Summit", Pos=Vector3.new(-429.60, 1077.86, 218.84)},
+    {Name="Checkpoint 1", Pos=Vector3.new(-417.83, 250.12, 789.73)},
+    {Name="Checkpoint 2", Pos=Vector3.new(-348.02, 389.12, 517.85)},
+    {Name="Checkpoint 3", Pos=Vector3.new(284.55, 431.10, 524.77)},
+    {Name="Checkpoint 4", Pos=Vector3.new(322.23, 491.12, 343.83)},
+    {Name="Checkpoint 5", Pos=Vector3.new(216.76, 315.12, -144.14)},
+    {Name="Summit", Pos=Vector3.new(-622.35, 905.86, -535.27)},
 }
 getgenv().CurrentCheckpoint = 1
 getgenv().AutoSummitLoop = false
 getgenv().AutoSummitOnce = false
 getgenv().AutoSummitRunning = false
-getgenv().AutoSummitDelay = 0.9
+getgenv().AutoSummitDelay = 7
 getgenv().WalkSpeedValue = 16
 getgenv().InfiniteJump = false
 getgenv().GodMode = true
@@ -383,7 +382,7 @@ local PlayerTab = Window:CreateTab("👥 Player")
 local AboutTab = Window:CreateTab("📝 About")
 
 -- ================== Main Tab ==================
-MainTab:CreateParagraph({Title = "Note :", Content = "Untuk kedip hts sudah tidak bisa dikarenakan fix\nDelay sudah max segini jangan dirubah ubah\nJika terjadi bug mohon segera hubungi Fayint"})
+MainTab:CreateParagraph({Title = "Note :", Content = "Disetiap checkpoint mohon lompat atau keliling biar ke cp!!\nJika terjadi bug mohon segera hubungi Fayint"})
 MainTab:CreateToggle({
     Name="🚀 Auto Summit Loop (BEST)", 
     CurrentValue=false, 
@@ -508,6 +507,13 @@ AboutTab:CreateButton({
     Callback = function()
         pcall(function() setclipboard("https://discord.gg/sHVDggUp") end)
         SafeNotify({Title="Server Discord", Content="Link Discord dicopy!", Duration=3})
+    end
+})
+AboutTab:CreateButton({
+    Name = "🔗 Alternative Saluran jika tidak ada discord!!",
+    Callback = function()
+        pcall(function() setclipboard("https://whatsapp.com/channel/0029VbBxCmiKgsNvPi1k5j3C") end)
+        SafeNotify({Title="Link Saluran", Content="Link Saluran dicopy!", Duration=3})
     end
 })
 AboutTab:CreateButton({
