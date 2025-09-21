@@ -8,9 +8,6 @@ local TeleportService = game:GetService("TeleportService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
--- ================== Load Rayfield ==================
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-
 -- ================== Key System ==================
 Rayfield:CreateKeySystem({
     Name = "Mount Aruna - FayintXHub", -- Judul Key System
