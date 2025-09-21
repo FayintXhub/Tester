@@ -10,7 +10,7 @@ local RunService = game:GetService("RunService")
 
 -- ================== Window ==================
 local Window = Rayfield:CreateWindow({
-    Name = "[VIP] ⛰️Mount Yahayuk - FayintXHub",
+    Name = "[VIP] ⛰️Mount Aruna - FayintXHub",
     Icon = 0,
     LoadingTitle = "Loading script...🚀",
     LoadingSubtitle = "Powered by FayintXHub",
@@ -19,20 +19,66 @@ local Window = Rayfield:CreateWindow({
     ConfigurationSaving = {Enabled = true, FolderName = nil, FileName = "FayintXhub"}
 })
 
+-- ================== License / Key System ==================
+-- NOTE: Ganti KeyServerURL ke endpoint valid jika punya server verifikasi.
+getgenv().KeyServerURL = "https://example.com/validate?key=" -- <-- ganti ke server valid
+getgenv().Key = nil
+getgenv().KeyVerified = false
+
+local function RequireKeyNotify()
+    SafeNotify({Title = "🔒 Locked", Content = "Fitur terkunci. Verifikasi Key di tab 🔑", Duration = 2.5})
+end
+
+local function VerifyKey(key)
+    if not key or key == "" then
+        SafeNotify({Title = "🔑 Key", Content = "Masukkan key terlebih dahulu.", Duration = 2.5})
+        return false
+    end
+
+    -- coba verifikasi lewat server (jika ada)
+    local ok, resp = pcall(function()
+        -- server diharapkan mereturn JSON { valid = true } atau { valid = false, message = "..." }
+        local raw = game:HttpGet(getgenv().KeyServerURL .. key)
+        return HttpService:JSONDecode(raw)
+    end)
+
+    if ok and resp and resp.valid then
+        getgenv().KeyVerified = true
+        getgenv().Key = key
+        SafeNotify({Title = "🔑 Key", Content = "Key valid. Terverifikasi!", Duration = 3})
+        return true
+    else
+        getgenv().KeyVerified = false
+        getgenv().Key = nil
+        if ok and resp and resp.message then
+            SafeNotify({Title = "🔑 Key", Content = resp.message, Duration = 3})
+        else
+            SafeNotify({Title = "🔑 Key", Content = "Key tidak valid atau server tidak merespon. Gunakan tombol 'Get Key' untuk info.", Duration = 3})
+        end
+        return false
+    end
+end
+
 -- ================== Global Variables ==================
 getgenv().Checkpoints = {
-    {Name="Checkpoint 1", Pos=Vector3.new(-417.83, 250.12, 789.73)},
-    {Name="Checkpoint 2", Pos=Vector3.new(-348.02, 389.12, 517.85)},
-    {Name="Checkpoint 3", Pos=Vector3.new(284.55, 431.10, 524.77)},
-    {Name="Checkpoint 4", Pos=Vector3.new(322.23, 491.12, 343.83)},
-    {Name="Checkpoint 5", Pos=Vector3.new(216.76, 315.12, -144.14)},
-    {Name="Summit", Pos=Vector3.new(-622.35, 905.86, -535.27)},
+    {Name="Checkpoint 1", Pos=Vector3.new(554.53, 45.00, 428.13)},
+    {Name="Checkpoint 2", Pos=Vector3.new(80.09, 249.00, -694.93)},
+    {Name="Checkpoint 3", Pos=Vector3.new(-7.27, 295.60, -1575.24)},
+    {Name="Checkpoint 4", Pos=Vector3.new(-83.39, 489.00, -2142.04)}, 
+    {Name="Checkpoint 5", Pos=Vector3.new(259.91, 704.69, -2669.70)},
+    {Name="Checkpoint 6", Pos=Vector3.new(142.10, 719.84, -2939.81)},
+    {Name="Checkpoint 7", Pos=Vector3.new(-89.67, 877.00, -3101.55)},
+    {Name="Checkpoint 8", Pos=Vector3.new(408.18, 873.00, -3081.76)},   
+    {Name="Checkpoint 9", Pos=Vector3.new(682.73, 932.55, -4157.49)},
+    {Name="Checkpoint 10", Pos=Vector3.new(961.05, 1097.00, -4725.15)},
+    {Name="Checkpoint 11", Pos=Vector3.new(786.88, 1313.00, -5266.53)},
+    {Name="Summit", Pos=Vector3.new(985.60, 1369.00, -5396.17)}, 
 }
 getgenv().CurrentCheckpoint = 1
 getgenv().AutoSummitLoop = false
 getgenv().AutoSummitOnce = false
 getgenv().AutoSummitRunning = false
-getgenv().AutoSummitDelay = 7
+getgenv().AutoSummitDelay = 2
 getgenv().WalkSpeedValue = 16
 getgenv().InfiniteJump = false
 getgenv().GodMode = true
@@ -235,6 +281,15 @@ game.Players.PlayerRemoving:Connect(removeESP)
 -- ================== Auto Summit Handler ==================
 local function AutoSummitHandler()
     if getgenv().AutoSummitRunning then return end
+
+    -- blokir jika belum verifikasi key
+    if not getgenv().KeyVerified then
+        SafeNotify({Title="🔒 Auto Summit", Content="Terkunci. Verifikasi key di tab 🔑", Duration=2.5})
+        getgenv().AutoSummitLoop = false
+        getgenv().AutoSummitOnce = false
+        return
+    end
+
     getgenv().AutoSummitRunning = true
 
     local mode = getgenv().AutoSummitLoop and "Loop" or "Sekali"
@@ -380,13 +435,20 @@ local CheckpointTab = Window:CreateTab("📍 Checkpoints")
 local CheatTab = Window:CreateTab("💀 Cheat")
 local PlayerTab = Window:CreateTab("👥 Player")
 local AboutTab = Window:CreateTab("📝 About")
+local LicenseTab = Window:CreateTab("🔑 License")
 
 -- ================== Main Tab ==================
-MainTab:CreateParagraph({Title = "Note :", Content = "Disetiap checkpoint mohon lompat atau keliling biar ke cp!!\nJika terjadi bug mohon segera hubungi Fayint"})
+MainTab:CreateParagraph({Title = "Note :", Content = "Jika kurang puas sama delay\nSilahkan atur delay dibawah\nJika terjadi bug mohon segera hubungi Fayint"})
 MainTab:CreateToggle({
-    Name="🚀 Auto Summit Loop (BEST)", 
+    Name="🚀 Auto Summit Loop", 
     CurrentValue=false, 
     Callback=function(v)
+        if not getgenv().KeyVerified then
+            -- batal jika belum verifikasi
+            SafeNotify({Title="🔒 Auto Summit", Content="Terkunci. Verifikasi key di tab 🔑", Duration=2.5})
+            getgenv().AutoSummitLoop = false
+            return
+        end
         getgenv().AutoSummitLoop = v
         if v then
             getgenv().AutoSummitOnce = false
@@ -396,8 +458,12 @@ MainTab:CreateToggle({
     end
 })
 MainTab:CreateButton({
-    Name="🎯 Auto Summit Sekali", 
+    Name="🎯 Auto Summit Sekali (BEST)", 
     Callback=function()
+        if not getgenv().KeyVerified then
+            SafeNotify({Title="🔒 Auto Summit", Content="Terkunci. Verifikasi key di tab 🔑", Duration=2.5})
+            return
+        end
         getgenv().AutoSummitOnce = true
         getgenv().CurrentCheckpoint = 1
         AutoSummitHandler()
@@ -412,14 +478,27 @@ end})
 
 -- ================== Cheat Tab ==================
 CheatTab:CreateSlider({Name="🏃 WalkSpeed", Range={16,200}, Increment=1, CurrentValue=getgenv().WalkSpeedValue, Callback=applyWalkSpeed})
-CheatTab:CreateToggle({Name="🦘 Infinite Jump", CurrentValue=false, Callback=setInfiniteJump})
-CheatTab:CreateToggle({Name="🛡️ God Mode", CurrentValue=false, Callback=setGodMode})
-CheatTab:CreateToggle({Name="🚫 NoClip", CurrentValue=false, Callback=setNoClip})
-CheatTab:CreateToggle({Name="🖐️ AntiFling", CurrentValue=false, Callback=setAntiFling})
+CheatTab:CreateToggle({Name="🦘 Infinite Jump", CurrentValue=false, Callback=function(v)
+    if not getgenv().KeyVerified then RequireKeyNotify() return end
+    setInfiniteJump(v)
+end})
+CheatTab:CreateToggle({Name="🛡️ God Mode", CurrentValue=false, Callback=function(v)
+    if not getgenv().KeyVerified then RequireKeyNotify() return end
+    setGodMode(v)
+end})
+CheatTab:CreateToggle({Name="🚫 NoClip", CurrentValue=false, Callback=function(v)
+    if not getgenv().KeyVerified then RequireKeyNotify() return end
+    setNoClip(v)
+end})
+CheatTab:CreateToggle({Name="🖐️ AntiFling", CurrentValue=false, Callback=function(v)
+    if not getgenv().KeyVerified then RequireKeyNotify() return end
+    setAntiFling(v)
+end})
 CheatTab:CreateToggle({
     Name = "👁️ ESP Players",
     CurrentValue = false,
     Callback = function(v)
+        if not getgenv().KeyVerified then RequireKeyNotify() return end
         ESPEnabled = v
         if v then
             for _, p in ipairs(game.Players:GetPlayers()) do
@@ -434,6 +513,7 @@ CheatTab:CreateToggle({
 CheatTab:CreateButton({
     Name = "🧲 Bring Parts",
     Callback = function()
+        if not getgenv().KeyVerified then RequireKeyNotify() return end
         pcall(function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/FayintXhub/Bring-Parts/refs/heads/main/BringParts"))()
         end)
@@ -444,6 +524,7 @@ CheatTab:CreateButton({
 CheatTab:CreateButton({
     Name = "🕊️ Fly to High",
     Callback = function()
+        if not getgenv().KeyVerified then RequireKeyNotify() return end
         pcall(function()
             loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Gui-Fly-v3-37111"))()
         end)
@@ -454,6 +535,7 @@ CheatTab:CreateButton({
 CheatTab:CreateButton({
     Name = "📜 Infinite Yield",
     Callback = function()
+        if not getgenv().KeyVerified then RequireKeyNotify() return end
         pcall(function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
         end)
@@ -467,16 +549,18 @@ PlayerTab:CreateInput({Name="🎯 Username Player", PlaceholderText="Nama player
     if t then getgenv().GotoTarget=t SafeNotify({Title="🎯 Target", Content="Target: "..name, Duration=2}) else SafeNotify({Title="⚠️ Error", Content="Player tidak ditemukan!", Duration=2}) end
 end})
 PlayerTab:CreateToggle({Name="🚀 Ikutin Player", CurrentValue=false, Callback=function(v)
+    if not getgenv().KeyVerified then RequireKeyNotify() return end
     getgenv().GotoPlayer=v
     if v then SmoothFollowPlayer() end
 end})
 PlayerTab:CreateToggle({Name="🧲 Tarik Player", CurrentValue=false, Callback=function(v)
+    if not getgenv().KeyVerified then RequireKeyNotify() return end
     getgenv().BringPlayer=v
     if v then SmoothBringPlayer() end
 end})
 PlayerTab:CreateButton({Name="🔄 Reset Character", Callback=function() local c = plr.Character if c then c:BreakJoints() SafeNotify({Title="🔄 Reset", Content="Karakter reset", Duration=2}) end end})
 PlayerTab:CreateButton({Name="🔄 Rejoin Server", Callback=RejoinServer})
-PlayerTab:CreateToggle({Name="🌍 Server Hop Nonstop", CurrentValue=false, Callback=function(v) getgenv().NonstopServerHop=v if v then ServerHopLoop() end end})
+PlayerTab:CreateToggle({Name="🌍 Server Hop Nonstop", CurrentValue=false, Callback=function(v) if not getgenv().KeyVerified then RequireKeyNotify() return end getgenv().NonstopServerHop=v if v then ServerHopLoop() end end})
 
 -- ================== Checkpoint Tab ==================
 for _, cp in ipairs(getgenv().Checkpoints) do
@@ -491,6 +575,13 @@ for _, cp in ipairs(getgenv().Checkpoints) do
         end
     })
 end
+
+-- ================== License Tab (UI) ==================
+local inputKey = ""
+LicenseTab:CreateParagraph({Title = "🔑 License System", Content = "Masukkan key yang kamu dapat. Jika belum punya, gunakan tombol 'Get Key' untuk info pembelian."})
+LicenseTab:CreateInput({Name = "Masukkan Key", PlaceholderText = "Masukkan license key", RemoveTextAfterFocusLost=false, Callback = function(val) inputKey = val end})
+LicenseTab:CreateButton({Name = "🔍 Verify Key", Callback = function() VerifyKey(inputKey) end})
+LicenseTab:CreateButton({Name = "🔗 Get Key / Buy", Callback = function() pcall(function() setclipboard("https://wa.me/6285138872456?text=Hello%20Fayint,%20I%20want%20a%20key") end); SafeNotify({Title="Link", Content="Link get key dicopy ke clipboard", Duration=3}) end})
 
 -- ================== About Tab ==================
 AboutTab:CreateParagraph({Title = "👋 Hallo Everyone", Content = "Selamat datang di FayintXHub!\nTerimakasih telah menggunakan script ini\nSelalu support Fayint kedepannya yaa..."})
@@ -524,6 +615,14 @@ AboutTab:CreateButton({
     end
 })
 
+-- tombol tambahan: get key cepat
+AboutTab:CreateButton({
+    Name = "🔑 Get Key (Cepat)",
+    Callback = function()
+        pcall(function() setclipboard("https://wa.me/6285138872456?text=Hello%20Fayint,%20I%20want%20a%20key") end)
+        SafeNotify({Title="🔑 Get Key", Content="Link get key dicopy ke clipboard", Duration=3})
+    end
+})
+
 -- ================== Finish ==================
 SafeNotify({Title="✅ FayintXHub Loaded", Content="Script telah siap, Enjoy the script!!🔥", Duration=5})
- 
