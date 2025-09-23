@@ -8,30 +8,15 @@ local TeleportService = game:GetService("TeleportService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
--- ================== Key System ==================
-Rayfield:CreateKeySystem({
-    Name = "Mount Aruna - FayintXHub", -- Judul Key System
-    Key = {"Fayint12"}, -- Daftar key yang valid
-    FileName = "FayintXhub", -- File untuk simpan key agar tidak perlu masuk lagi
-    SaveKey = true, -- Key tersimpan untuk login berikutnya
-    GrabKeyFromSite = true, -- Biar ada link buat ambil key
-    KeyLink = "https://chat.whatsapp.com/LGyajryoaB5BIZaZyQMUzW?mode=ems_copy_t", -- Link ambil key (ganti sesuai kebutuhanmu)
-    Discord = "https://discord.gg/sHVDggUp", -- (opsional) Link discord kamu
-})
-
 -- ================== Window ==================
 local Window = Rayfield:CreateWindow({
-    Name = "[VIP] ⛰️Mount Aruna - FayintXHub",
+    Name = "[VIP] ⛰️Mount Project - FayintXHub",
     Icon = 0,
     LoadingTitle = "Loading script...🚀",
     LoadingSubtitle = "Powered by FayintXHub",
     ShowText = "FayintXHub",
     Theme = "Dark",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = nil,
-        FileName = "FayintXhub"
-    }
+    ConfigurationSaving = {Enabled = true, FolderName = nil, FileName = "FayintXhub"}
 })
 
 -- ================== Global Variables ==================
@@ -69,6 +54,8 @@ local ESPEnabled = false
 local ESPBoxes, ESPConnections, lastNotify = {}, {}, {}
 local AntiFlingEnabled = false
 local AntiFlingConnection
+local WalkFlingEnabled = false
+local WalkFlingConnection
 
 -- ================== Helper Notify ==================
 local function SafeNotify(data)
@@ -113,13 +100,15 @@ local function setGodMode(state)
     getgenv().GodMode = state
     if GodModeConnection then GodModeConnection:Disconnect() GodModeConnection = nil end
     if state then
-        GodModeConnection = RunService.Heartbeat:Connect(function()
-            local char = plr.Character
-            local hum = char and char:FindFirstChildOfClass("Humanoid")
-            if hum and hum.Health > 0 and hum.Health < hum.MaxHealth then
-                pcall(function() hum.Health = hum.MaxHealth end)
-            end
-        end)
+        local char = plr.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            GodModeConnection = hum.HealthChanged:Connect(function()
+                if hum and hum.Health and hum.MaxHealth and hum.Health < hum.MaxHealth then
+                    pcall(function() hum.Health = hum.MaxHealth end)
+                end
+            end)
+        end
     end
 end
 
@@ -197,6 +186,10 @@ plr.CharacterAdded:Connect(function(char)
 
         if getgenv().AntiFling then
             setAntiFling(true)
+        end
+
+        if getgenv().WalkFling then
+            setWalkFling(true)
         end
     end)
 end)
@@ -403,9 +396,9 @@ local PlayerTab = Window:CreateTab("👥 Player")
 local AboutTab = Window:CreateTab("📝 About")
 
 -- ================== Main Tab ==================
-MainTab:CreateParagraph({Title = "Note :", Content = "Jika kurang puas sama delay\nSilahkan atur delay dibawah\nJika terjadi bug mohon segera hubungi Fayint"})
+MainTab:CreateParagraph({Title = "Note :", Content = "Jika kurang puas sama delay, atur sendiri\nAtur di Summit delay dibawah!!"})
 MainTab:CreateToggle({
-    Name="🚀 Auto Summit Loop", 
+    Name="🚀 Auto Summit Loop (BEST)", 
     CurrentValue=false, 
     Callback=function(v)
         getgenv().AutoSummitLoop = v
@@ -417,7 +410,7 @@ MainTab:CreateToggle({
     end
 })
 MainTab:CreateButton({
-    Name="🎯 Auto Summit Sekali (BEST)", 
+    Name="🎯 Auto Summit Sekali", 
     Callback=function()
         getgenv().AutoSummitOnce = true
         getgenv().CurrentCheckpoint = 1
@@ -453,6 +446,23 @@ CheatTab:CreateToggle({
 })
 
 CheatTab:CreateButton({
+    Name = "📋 Copy Position (Angka)",  
+    Callback = function()
+        local hrp = (plr.Character or plr.CharacterAdded:Wait()):FindFirstChild("HumanoidRootPart")
+        if hrp then
+            -- Ambil posisi X, Y, Z sebagai string angka saja
+            local posStr = string.format("%.2f, %.2f, %.2f", hrp.Position.X, hrp.Position.Y, hrp.Position.Z)
+            setclipboard(posStr)
+            SafeNotify({
+                Title = "📋 Copy Position",
+                Content = "Posisi disalin (hanya angka)",
+                Duration = 2
+            })
+        end
+    end
+})
+
+CheatTab:CreateButton({
     Name = "🧲 Bring Parts",
     Callback = function()
         pcall(function()
@@ -466,7 +476,7 @@ CheatTab:CreateButton({
     Name = "🕊️ Fly to High",
     Callback = function()
         pcall(function()
-            loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Gui-Fly-v3-37111"))()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))()
         end)
         SafeNotify({Title = "🕊️ Fly", Content = "Fly Script Loaded!", Duration = 2})
     end
@@ -531,7 +541,7 @@ AboutTab:CreateButton({
     end
 })
 AboutTab:CreateButton({
-    Name = "🔗 Alternative Saluran jika tidak ada discord!!",
+    Name = "🔗 Alternative Whatsapp jika tidak ada discord!!",
     Callback = function()
         pcall(function() setclipboard("https://whatsapp.com/channel/0029VbBxCmiKgsNvPi1k5j3C") end)
         SafeNotify({Title="Link Saluran", Content="Link Saluran dicopy!", Duration=3})
