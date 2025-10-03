@@ -1,0 +1,412 @@
+--// Warp Hub Modern + AutoLoop + Scrollable Checkpoint + TP/DEL + JSON + AutoSummitRespawn + Compact Multi-Column Buttons
+--// Modern UI by FayintXCode (checkpoint fixed & buttons spaced)
+
+local Players = game:GetService("Players")
+local StarterGui = game:GetService("StarterGui")
+local HttpService = game:GetService("HttpService")
+local CoreGui = game:GetService("CoreGui")
+
+local plr = Players.LocalPlayer
+local hrp = plr.Character and plr.Character:WaitForChild("HumanoidRootPart")
+
+local checkpoints = {}
+local autoLoop = false
+local speed = 0.01
+getgenv().AutoSummitRespawn = false
+getgenv().AutoSummitRunning = false
+getgenv().CurrentCheckpoint = 1
+
+plr.CharacterAdded:Connect(function(char)
+    hrp = char:WaitForChild("HumanoidRootPart")
+end)
+
+-- Teleport function
+local function teleportTo(cf)
+    if not cf then return end
+    local char = plr.Character or plr.CharacterAdded:Wait()
+    local localHrp = char:FindFirstChild("HumanoidRootPart") or char:WaitForChild("HumanoidRootPart",5)
+    if localHrp then
+        pcall(function() localHrp.CFrame = cf end)
+    end
+end
+
+-- Auto Summit Handler
+local function AutoSummitHandler()
+    if getgenv().AutoSummitRunning then return end
+    getgenv().AutoSummitRunning = true
+
+    if #checkpoints == 0 then
+        warn("⚠️ Checkpoints kosong!")
+        getgenv().AutoSummitRunning = false
+        return
+    end
+
+    task.spawn(function()
+        local function gotoCheckpoint(i)
+            local char = plr.Character or plr.CharacterAdded:Wait()
+            local localHrp = char:FindFirstChild("HumanoidRootPart") or char:WaitForChild("HumanoidRootPart",5)
+            if not localHrp then return end
+
+            local cp = checkpoints[i]
+            if cp then
+                local offset = Vector3.new(
+                    (math.random() - 0.5) * 0.6,
+                    math.random() * 0.1,
+                    (math.random() - 0.5) * 0.6
+                )
+                pcall(function()
+                    localHrp.CFrame = CFrame.new(cp.Position + offset)
+                end)
+                getgenv().CurrentCheckpoint = i
+                task.wait(speed + math.random()*0.2)
+            end
+        end
+
+        getgenv().CurrentCheckpoint = 1
+        while autoLoop do
+            gotoCheckpoint(getgenv().CurrentCheckpoint)
+
+            if getgenv().CurrentCheckpoint >= #checkpoints then
+                if getgenv().AutoSummitRespawn then
+                    pcall(function() plr.Character:BreakJoints() end)
+                    local newChar = plr.CharacterAdded:Wait()
+                    hrp = newChar:WaitForChild("HumanoidRootPart",10)
+                    task.wait(0.5)
+                end
+                getgenv().CurrentCheckpoint = 1
+            else
+                getgenv().CurrentCheckpoint += 1
+            end
+
+            task.wait(speed)
+        end
+
+        getgenv().AutoSummitRunning = false
+    end)
+end
+
+local function startAutoLoop()
+    autoLoop = true
+    AutoSummitHandler()
+end
+
+-- Remove previous GUI
+pcall(function()
+    local old = CoreGui:FindFirstChild("FayintXCode_Warp")
+    if old then old:Destroy() end
+end)
+
+-- Main GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "FayintXCode_Warp"
+gui.ResetOnSpawn = false
+gui.Parent = CoreGui
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 420, 0, 280)
+frame.Position = UDim2.new(0.3,0,0.2,0)
+frame.BackgroundColor3 = Color3.fromRGB(25,25,35)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0,20)
+
+-- Title
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1,0,0,40)
+title.BackgroundColor3 = Color3.fromRGB(50,50,70)
+title.Text = "Script Warp - FayintXCode"
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.BorderSizePixel = 0
+Instance.new("UICorner", title).CornerRadius = UDim.new(0,20)
+
+-- Minimize Button
+local MinimizeButton = Instance.new("TextButton", frame)
+MinimizeButton.Size = UDim2.new(0, 36, 0, 36)
+MinimizeButton.Position = UDim2.new(1, -40, 0, 2)
+MinimizeButton.Text = "-"
+MinimizeButton.BackgroundColor3 = Color3.fromRGB(60,60,80)
+MinimizeButton.TextColor3 = Color3.fromRGB(255,255,255)
+MinimizeButton.Font = Enum.Font.GothamBold
+MinimizeButton.TextSize = 16
+MinimizeButton.AutoButtonColor = false
+Instance.new("UICorner", MinimizeButton).CornerRadius = UDim.new(0,18)
+
+-- Utility to create spaced buttons (28% width, 3 per row)
+local function createBtn(parent,text,xPos,yPos,color)
+    local btn = Instance.new("TextButton", parent)
+    btn.Size = UDim2.new(0.28,0,0,36)
+    btn.Position = UDim2.new(0,xPos,0,yPos)
+    btn.BackgroundColor3 = color or Color3.fromRGB(70,70,90)
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.Text = text
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 15
+    btn.BorderSizePixel = 0
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,12)
+    return btn
+end
+
+-- Buttons 2–3 per row
+local toggleLoopBtn    = createBtn(frame,"▶️ AutoLoop OFF",20,50,Color3.fromRGB(200,60,60))
+local saveBtn          = createBtn(frame,"📌 Save CP",150,50,Color3.fromRGB(70,120,200))
+local delAllBtn        = createBtn(frame,"🗑️ Delete All",280,50,Color3.fromRGB(220,120,40))
+
+local saveFileBtn      = createBtn(frame,"💾 Save File",20,100,Color3.fromRGB(100,150,200))
+local loadFileBtn      = createBtn(frame,"📂 Load File",150,100,Color3.fromRGB(100,200,150))
+local toggleRespawnBtn = createBtn(frame,"♻️ Respawn OFF",280,100,Color3.fromRGB(200,180,60))
+
+local listLayout = Instance.new("UIListLayout", scroll)
+listLayout.Padding = UDim.new(0,6)
+listLayout.FillDirection = Enum.FillDirection.Vertical
+listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+-- Scrollable checkpoint list
+local scroll = Instance.new("ScrollingFrame", frame)
+scroll.Size = UDim2.new(1,-40,0,120)
+scroll.Position = UDim2.new(0,20,0,200)
+scroll.BackgroundColor3 = Color3.fromRGB(35,35,45)
+scroll.BorderSizePixel = 0
+scroll.ScrollBarThickness = 8
+scroll.CanvasSize = UDim2.new(0,0,0,0)
+scroll.HorizontalScrollBarInset = Enum.ScrollBarInset.Always
+scroll.ScrollBarImageColor3 = Color3.fromRGB(150,150,150)
+Instance.new("UICorner", scroll).CornerRadius = UDim.new(0,12)
+
+local listLayout = Instance.new("UIListLayout", scroll)
+listLayout.Padding = UDim.new(0,6)
+listLayout.FillDirection = Enum.FillDirection.Vertical
+listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+-- Speed input
+local speedLabel = Instance.new("TextLabel", frame)
+speedLabel.Size = UDim2.new(0, 70, 0, 24)
+speedLabel.Position = UDim2.new(0, 20, 0, 160)
+speedLabel.BackgroundTransparency = 1
+speedLabel.Text = "Delay(s):"
+speedLabel.TextColor3 = Color3.fromRGB(255,255,255)
+speedLabel.Font = Enum.Font.GothamBold
+speedLabel.TextSize = 13
+
+local speedInput = Instance.new("TextBox", frame)
+speedInput.Size = UDim2.new(0, 30, 0, 14)
+speedInput.Position = UDim2.new(0, 90, 0, 150)
+speedInput.Text = tostring(speed)
+speedInput.ClearTextOnFocus = false
+speedInput.TextColor3 = Color3.fromRGB(255,255,255)
+speedInput.BackgroundColor3 = Color3.fromRGB(50,50,70)
+speedInput.Font = Enum.Font.GothamBold
+speedInput.TextSize = 13
+Instance.new("UICorner", speedInput).CornerRadius = UDim.new(0,6)
+
+speedInput.FocusLost:Connect(function(enterPressed)
+    local newSpeed = tonumber(speedInput.Text)
+    if newSpeed then
+        speed = math.max(0, newSpeed)
+    else
+        speedInput.Text = tostring(speed)
+    end
+end)
+
+-- Refresh checkpoint list (compact)
+local function refreshCheckpointList()
+    -- Hapus semua frame lama di scroll
+    for _, child in ipairs(scroll:GetChildren()) do
+        if child:IsA("Frame") then
+            child:Destroy()
+        end
+    end
+
+    -- Buat ulang frame untuk setiap checkpoint
+    for i, cf in ipairs(checkpoints) do
+        local cpFrame = Instance.new("Frame", scroll)
+        cpFrame.Size = UDim2.new(1, 0, 0, 36)
+        cpFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+        Instance.new("UICorner", cpFrame).CornerRadius = UDim.new(0, 12)
+
+        -- Label checkpoint
+        local label = Instance.new("TextLabel", cpFrame)
+        label.Size = UDim2.new(0.5, 0, 1, 0)
+        label.Position = UDim2.new(0, 0, 0, 0)
+        label.Text = "Checkpoint "..i
+        label.TextColor3 = Color3.new(1,1,1)
+        label.Font = Enum.Font.GothamBold
+        label.TextSize = 14
+        label.BackgroundTransparency = 1
+
+        -- Tombol TP
+        local tpBtn = Instance.new("TextButton", cpFrame)
+        tpBtn.Size = UDim2.new(0.25, 0, 1, 0)
+        tpBtn.Position = UDim2.new(0.5, 0, 0, 0)
+        tpBtn.Text = "🚀 TP"
+        tpBtn.TextSize = 12
+        tpBtn.Font = Enum.Font.GothamBold
+        tpBtn.BackgroundColor3 = Color3.fromRGB(60,180,90)
+        tpBtn.TextColor3 = Color3.new(1,1,1)
+        Instance.new("UICorner", tpBtn).CornerRadius = UDim.new(0,6)
+
+        -- Capture CFrame lokal untuk tombol TP
+        local cpCF = cf
+        tpBtn.MouseButton1Click:Connect(function()
+            teleportTo(cpCF)
+        end)
+
+        -- Tombol DEL
+        local delBtn = Instance.new("TextButton", cpFrame)
+        delBtn.Size = UDim2.new(0.25, 0, 1, 0)
+        delBtn.Position = UDim2.new(0.75, 0, 0, 0)
+        delBtn.Text = "🗑️ DEL"
+        delBtn.TextSize = 12
+        delBtn.Font = Enum.Font.GothamBold
+        delBtn.BackgroundColor3 = Color3.fromRGB(200,60,60)
+        delBtn.TextColor3 = Color3.new(1,1,1)
+        Instance.new("UICorner", delBtn).CornerRadius = UDim.new(0,6)
+
+        -- Capture CFrame lokal untuk tombol DEL
+        local delCF = cf
+        delBtn.MouseButton1Click:Connect(function()
+            for j, v in ipairs(checkpoints) do
+                if v == delCF then
+                    table.remove(checkpoints, j)
+                    break
+                end
+            end
+            refreshCheckpointList()
+        end)
+    end
+
+    -- Update CanvasSize scroll agar menyesuaikan jumlah checkpoint
+    scroll.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10)
+end
+
+-- Button actions
+toggleLoopBtn.MouseButton1Click:Connect(function()
+    autoLoop = not autoLoop
+    if autoLoop then
+        startAutoLoop()
+        toggleLoopBtn.BackgroundColor3 = Color3.fromRGB(60,180,90)
+        toggleLoopBtn.Text = "▶️ AutoLoop ON"        
+    else
+        toggleLoopBtn.BackgroundColor3 = Color3.fromRGB(200,60,60)    
+        toggleLoopBtn.Text = "⏹️ AutoLoop OFF"    
+    end
+end)
+
+saveBtn.MouseButton1Click:Connect(function()
+    if hrp then
+        table.insert(checkpoints, hrp.CFrame)
+        refreshCheckpointList()
+    end
+end)
+
+delAllBtn.MouseButton1Click:Connect(function()
+    checkpoints = {}
+    refreshCheckpointList()
+end)
+
+local function saveToFile()
+    local data = {}
+    for _,cf in ipairs(checkpoints) do
+        local x,y,z = cf.Position.X, cf.Position.Y, cf.Position.Z
+        local rX,rY,rZ = cf:ToEulerAnglesXYZ()
+        table.insert(data,{x,y,z,rX,rY,rZ})
+    end
+    local json = HttpService:JSONEncode(data)
+    if writefile then
+        pcall(function() writefile("checkpoints.json",json) end)
+    else
+        warn("writefile not available")
+    end
+end
+
+local function loadFromFile()
+    if isfile and isfile("checkpoints.json") then
+        local ok, json = pcall(function() return readfile("checkpoints.json") end)
+        if not ok then return end
+        local data = HttpService:JSONDecode(json)
+        checkpoints = {}
+        for _,v in ipairs(data) do
+            local cf = CFrame.new(v[1],v[2],v[3]) * CFrame.Angles(v[4],v[5],v[6])
+            table.insert(checkpoints,cf)
+        end
+        refreshCheckpointList()
+    end
+end
+
+saveFileBtn.MouseButton1Click:Connect(saveToFile)
+loadFileBtn.MouseButton1Click:Connect(loadFromFile)
+loadFromFile()
+
+toggleRespawnBtn.MouseButton1Click:Connect(function()
+    getgenv().AutoSummitRespawn = not getgenv().AutoSummitRespawn
+    toggleRespawnBtn.Text = getgenv().AutoSummitRespawn and "♻️ Respawn ON" or "♻️ Respawn OFF"
+end)
+
+-- Minimize logic
+local minimized = true
+local function setFrameState(state)
+    minimized = state
+    if minimized then
+        frame.Size = UDim2.new(0,420,0,40)
+        MinimizeButton.Text = "+"
+        
+        toggleLoopBtn.Visible = false
+        saveBtn.Visible = false
+        delAllBtn.Visible = false
+        saveFileBtn.Visible = false
+        loadFileBtn.Visible = false
+        toggleRespawnBtn.Visible = false
+        scroll.Visible = false
+        
+        speedLabel.Visible = false
+        speedInput.Visible = false
+    else
+        frame.Size = UDim2.new(0,420,0,280)
+        MinimizeButton.Text = "-"
+        
+        toggleLoopBtn.Visible = true
+        saveBtn.Visible = true
+        delAllBtn.Visible = true
+        saveFileBtn.Visible = true
+        loadFileBtn.Visible = true
+        toggleRespawnBtn.Visible = true
+        scroll.Visible = true
+
+        speedLabel.Visible = true
+        speedInput.Visible = true
+    end
+end
+
+setFrameState(minimized)
+
+MinimizeButton.MouseButton1Click:Connect(function()
+    setFrameState(not minimized)
+end)
+
+-- Notify
+pcall(function()
+    local success, userId = pcall(function() return Players:GetUserIdFromNameAsync("FAYINTX") end)
+    if success and userId then
+        local thumbType = Enum.ThumbnailType.HeadShot
+        local thumbSize = Enum.ThumbnailSize.Size420x420
+        local content, isReady = Players:GetUserThumbnailAsync(userId, thumbType, thumbSize)
+
+        StarterGui:SetCore("SendNotification", {
+            Title = "🔓 Script Terbuka",
+            Text = "Exclusive Script!!",
+            Icon = content,
+            Duration = 8
+        })
+
+        StarterGui:SetCore("SendNotification", {
+            Title = "👨‍💻 Developer by",
+            Text = "FayintXCode!!",
+            Icon = content,
+            Duration = 8
+        })
+    end
+end)
