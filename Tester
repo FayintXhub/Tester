@@ -194,7 +194,7 @@ speedLabel.TextSize = 13
 
 local speedInput = Instance.new("TextBox", frame)
 speedInput.Size = UDim2.new(0, 30, 0, 14)
-speedInput.Position = UDim2.new(0, 90, 0, 150)
+speedInput.Position = UDim2.new(0, 20, 0, 150)
 speedInput.Text = tostring(speed)
 speedInput.ClearTextOnFocus = false
 speedInput.TextColor3 = Color3.fromRGB(255,255,255)
